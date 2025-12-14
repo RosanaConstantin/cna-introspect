@@ -3,6 +3,17 @@ set -e  # Exit on any error
 set -u  # Exit on undefined variables
 set -o pipefail  # Exit on pipe failures
 
+# Check if Docker is running
+echo "Checking Docker daemon..."
+if ! docker info >/dev/null 2>&1; then
+  echo "❌ Docker is not running. Please start Docker Desktop:"
+  echo "   1. Run: open -a Docker"
+  echo "   2. Wait for Docker to start (look for Docker icon in menu bar)"
+  echo "   3. Run this script again"
+  exit 1
+fi
+echo "✅ Docker is running"
+
 # Configuration
 AWS_REGION="us-east-1"
 echo "Getting AWS Account ID..."
