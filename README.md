@@ -38,20 +38,42 @@ ProductService → Dapr Sidecar → AWS SNS/SQS → Dapr Sidecar → OrderServic
    eksctl create cluster -f infrastructure/eks-cluster.yaml
    ```
 
-4. **Deploy Everything**
+4. **Setup IAM Roles for Service Accounts (IRSA)**
+   ```bash
+   chmod +x scripts/setup-irsa.sh
+   ./scripts/setup-irsa.sh
+   ```
+
+5. **Deploy Everything**
    ```bash
    ./scripts/deploy.sh
    ```
 
-5. **Test the Flow**
+6. **Test the Flow**
    ```bash
    ./scripts/test.sh
    ```
 
 ## Services
 
-- **ProductService**: Publishes product events to SNS/SQS
-- **OrderService**: Subscribes to product events and processes orders
+- **ProductService**: Publishes product events to SNS/SQS with input validation, structured logging, and retry mechanisms
+- **OrderService**: Subscribes to product events and processes orders with comprehensive error handling
+
+## Security Features
+
+- **IAM Roles for Service Accounts (IRSA)**: No hardcoded AWS credentials
+- **Input Validation**: Comprehensive validation for all API endpoints
+- **Security Contexts**: Non-root containers with minimal privileges
+- **Structured Logging**: JSON-formatted logs with correlation IDs
+- **Error Handling**: Comprehensive error handling with proper HTTP status codes
+
+## Observability Features
+
+- **Correlation IDs**: Request tracing across services
+- **Structured Logging**: JSON logs for better parsing and analysis
+- **Health Checks**: Comprehensive health endpoints
+- **Metrics**: CPU and memory-based auto-scaling
+- **Multi-AZ Deployment**: High availability across availability zones
 
 ## Monitoring
 
@@ -83,19 +105,31 @@ kubectl get service product-service
 ```bash
 curl -X POST http://<EXTERNAL-IP>/api/products \
   -H "Content-Type: application/json" \
+  -H "x-correlation-id: test-123" \
   -d '{"id":"prod-123","name":"Test Product","price":99.99}'
 ```
 
 **Expected Response:**
 ```json
-{"message":"Product created and event published","product":{"id":"prod-123","name":"Test Product","price":99.99}}
+{
+  "message": "Product created and event published",
+  "product": {
+    "id": "prod-123",
+    "name": "Test Product",
+    "price": 99.99
+  },
+  "correlationId": "test-123"
+}
 ```
 
 ## Environment Details
 
-- **Container Registry**: Amazon ECR
-- **Kubernetes**: Amazon EKS 1.28+
+- **Container Registry**: Amazon ECR with versioned tags (v1.0.0)
+- **Kubernetes**: Amazon EKS 1.28+ with multi-AZ deployment
 - **Runtime**: Node.js 20.x LTS
 - **Message Broker**: AWS SNS/SQS via Dapr
-- **Monitoring**: CloudWatch Logs
-- **Security**: Non-root containers, security contexts
+- **Authentication**: IAM Roles for Service Accounts (IRSA)
+- **Monitoring**: CloudWatch Logs with structured JSON logging
+- **Security**: Non-root containers, security contexts, input validation
+- **Scaling**: Horizontal Pod Autoscaler with CPU and memory metrics
+- **Error Handling**: Comprehensive error handling with retry mechanisms

@@ -1,0 +1,24 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: default
+spec:
+  type: pubsub.aws.snssqs
+  version: v1
+  metadata:
+  - name: region
+    value: "us-east-1"
+  - name: endpoint
+    value: ""
+  # Using IAM roles for service accounts (IRSA) - no credentials needed
+---
+# Service Account with IAM role annotation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dapr-service-account
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/DaprSNSSQSRole
+automountServiceAccountToken: true
