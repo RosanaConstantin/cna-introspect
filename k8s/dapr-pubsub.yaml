@@ -20,5 +20,5 @@ metadata:
   name: dapr-service-account
   namespace: default
   annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/DaprSNSSQSRole
+    eks.amazonaws.com/role-arn: arn:aws:iam::335444506576:role/DaprSNSSQSRole
 automountServiceAccountToken: true

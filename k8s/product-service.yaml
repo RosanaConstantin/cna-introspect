@@ -21,7 +21,7 @@ spec:
       serviceAccountName: dapr-service-account
       containers:
       - name: product-service
-        image: <ECR_REGISTRY>/product-service:v1.0.0
+        image: 335444506576.dkr.ecr.us-east-1.amazonaws.com/product-service:v1.0.0
         ports:
         - containerPort: 3000
         env:

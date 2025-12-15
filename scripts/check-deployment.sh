@@ -3,6 +3,11 @@
 echo "Checking Dapr Cluster Deployment Status..."
 echo "=========================================="
 
+# Use org-demo profile
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+export AWS_PROFILE=$AWS_PROFILE
+
 # Check if AWS CLI is available
 if ! command -v aws &> /dev/null; then
     echo "❌ AWS CLI not installed"
@@ -12,7 +17,7 @@ fi
 
 # Check AWS credentials
 echo "1. Checking AWS credentials..."
-aws sts get-caller-identity &> /dev/null || {
+aws sts get-caller-identity --profile $AWS_PROFILE &> /dev/null || {
     echo "❌ AWS not configured. Run: aws configure"
     exit 1
 }
@@ -21,7 +26,7 @@ echo "✅ AWS credentials configured"
 # Check for EKS cluster
 echo ""
 echo "2. Checking for EKS cluster 'dapr-microservices-cluster'..."
-CLUSTER_STATUS=$(aws eks describe-cluster --name dapr-microservices-cluster --region us-east-1 --query 'cluster.status' --output text 2>/dev/null || echo "NOT_FOUND")
+CLUSTER_STATUS=$(aws eks describe-cluster --name dapr-microservices-cluster --region us-east-1 --profile $AWS_PROFILE --query 'cluster.status' --output text 2>/dev/null || echo "NOT_FOUND")
 
 if [ "$CLUSTER_STATUS" = "NOT_FOUND" ]; then
     echo "❌ Cluster 'dapr-microservices-cluster' does not exist"
@@ -65,7 +70,7 @@ elif [ "$CLUSTER_STATUS" = "ACTIVE" ]; then
         
     } || {
         echo "❌ kubectl not connected to cluster"
-        echo "Run: aws eks update-kubeconfig --region us-east-1 --name dapr-microservices-cluster"
+        echo "Run: aws eks update-kubeconfig --region us-east-1 --name dapr-microservices-cluster --profile $AWS_PROFILE"
     }
 else
     echo "⚠️  Cluster status: $CLUSTER_STATUS"

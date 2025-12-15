@@ -21,7 +21,7 @@ spec:
       serviceAccountName: dapr-service-account
       containers:
       - name: order-service
-        image: <ECR_REGISTRY>/order-service:v1.0.0
+        image: 335444506576.dkr.ecr.us-east-1.amazonaws.com/order-service:v1.0.0
         ports:
         - containerPort: 3001
         env:
