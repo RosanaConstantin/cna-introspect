@@ -3,6 +3,11 @@ set -e  # Exit on any error
 set -u  # Exit on undefined variables
 set -o pipefail  # Exit on pipe failures
 
+# Use org-demo profile
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+export AWS_PROFILE=$AWS_PROFILE
+
 # Get ProductService LoadBalancer URL
 echo "Getting ProductService endpoint..."
 PRODUCT_SERVICE_URL=$(kubectl get service product-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")

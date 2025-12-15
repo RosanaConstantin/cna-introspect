@@ -16,27 +16,34 @@ echo "✅ Docker is running"
 
 # Configuration
 AWS_REGION="us-east-1"
-echo "Getting AWS Account ID..."
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text) || {
-  echo "Error: Failed to get AWS Account ID. Please check AWS CLI configuration."
+
+# Use org-demo profile
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+
+# Get account ID from org-demo profile
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --profile $AWS_PROFILE --query Account --output text) || {
+  echo "Error: Failed to get AWS Account ID from profile $AWS_PROFILE"
+  echo "Make sure profile exists: aws configure --profile org-demo"
   exit 1
 }
+echo "Using AWS Account ID: $AWS_ACCOUNT_ID"
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 echo "Using ECR Registry: $ECR_REGISTRY"
 
 # Create ECR repositories if they don't exist
 echo "Creating ECR repositories..."
-aws ecr describe-repositories --repository-names product-service --region $AWS_REGION 2>/dev/null || {
+aws ecr describe-repositories --repository-names product-service --region $AWS_REGION --profile $AWS_PROFILE 2>/dev/null || {
   echo "Creating product-service repository..."
-  aws ecr create-repository --repository-name product-service --region $AWS_REGION || {
+  aws ecr create-repository --repository-name product-service --region $AWS_REGION --profile $AWS_PROFILE || {
     echo "Error: Failed to create product-service repository"
     exit 1
   }
 }
 
-aws ecr describe-repositories --repository-names order-service --region $AWS_REGION 2>/dev/null || {
+aws ecr describe-repositories --repository-names order-service --region $AWS_REGION --profile $AWS_PROFILE 2>/dev/null || {
   echo "Creating order-service repository..."
-  aws ecr create-repository --repository-name order-service --region $AWS_REGION || {
+  aws ecr create-repository --repository-name order-service --region $AWS_REGION --profile $AWS_PROFILE || {
     echo "Error: Failed to create order-service repository"
     exit 1
   }
@@ -44,7 +51,7 @@ aws ecr describe-repositories --repository-names order-service --region $AWS_REG
 
 # Login to ECR
 echo "Logging into ECR..."
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY || {
+aws ecr get-login-password --region $AWS_REGION --profile $AWS_PROFILE | docker login --username AWS --password-stdin $ECR_REGISTRY || {
   echo "Error: Failed to login to ECR"
   exit 1
 }

@@ -6,10 +6,13 @@ echo "============================"
 
 AWS_REGION="us-east-1"
 CLUSTER_NAME="dapr-microservices-cluster"
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+export AWS_PROFILE=$AWS_PROFILE
 
-# Get AWS Account ID
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null) || {
-    echo "❌ AWS not configured"
+# Get account ID from org-demo profile
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --profile $AWS_PROFILE --query Account --output text 2>/dev/null) || {
+    echo "❌ AWS profile $AWS_PROFILE not configured"
     exit 1
 }
 

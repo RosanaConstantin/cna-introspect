@@ -3,6 +3,11 @@ set -e  # Exit on any error
 set -u  # Exit on undefined variables
 set -o pipefail  # Exit on pipe failures
 
+# Use org-demo profile
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+export AWS_PROFILE=$AWS_PROFILE
+
 echo "Installing Dapr on EKS cluster..."
 helm repo add dapr https://dapr.github.io/helm-charts/ || {
   echo "Error: Failed to add Dapr helm repository"

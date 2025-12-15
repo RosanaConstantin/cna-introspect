@@ -12,13 +12,26 @@ ROLE_NAME="DaprSNSSQSRole"
 
 echo "Setting up IAM roles for service accounts (IRSA)..."
 
-# Get AWS Account ID
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text) || {
-  echo "Error: Failed to get AWS Account ID"
+# Use org-demo profile
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+
+# Get account ID from org-demo profile
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --profile $AWS_PROFILE --query Account --output text) || {
+  echo "Error: Failed to get AWS Account ID from profile $AWS_PROFILE"
+  echo "Make sure profile exists: aws configure --profile org-demo"
   exit 1
 }
+echo "Using AWS Account ID: $AWS_ACCOUNT_ID"
 
-echo "AWS Account ID: $AWS_ACCOUNT_ID"
+# Check if EKS cluster exists
+echo "Checking if EKS cluster exists..."
+if ! aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --profile $AWS_PROFILE &>/dev/null; then
+    echo "❌ EKS cluster '$CLUSTER_NAME' not found"
+    echo "Create cluster first: eksctl create cluster -f infrastructure/eks-cluster.yaml"
+    exit 1
+fi
+echo "✅ EKS cluster found"
 
 # Create IAM policy for SNS/SQS access
 echo "Creating IAM policy for SNS/SQS access..."
@@ -61,12 +74,14 @@ POLICY_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:policy/DaprSNSSQSPolicy"
 aws iam create-policy \
     --policy-name DaprSNSSQSPolicy \
     --policy-document file://dapr-sns-sqs-policy.json \
-    --description "Policy for Dapr SNS/SQS access" 2>/dev/null || {
+    --description "Policy for Dapr SNS/SQS access" \
+    --profile $AWS_PROFILE 2>/dev/null || {
     echo "Policy already exists, updating..."
     aws iam create-policy-version \
         --policy-arn $POLICY_ARN \
         --policy-document file://dapr-sns-sqs-policy.json \
-        --set-as-default
+        --set-as-default \
+        --profile $AWS_PROFILE
 }
 
 # Create trust policy for the role
@@ -78,13 +93,13 @@ cat > trust-policy.json << EOF
         {
             "Effect": "Allow",
             "Principal": {
-                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||')"
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --profile $AWS_PROFILE --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||')"
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||'):sub": "system:serviceaccount:${NAMESPACE}:${SERVICE_ACCOUNT_NAME}",
-                    "$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||'):aud": "sts.amazonaws.com"
+                    "$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --profile $AWS_PROFILE --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||'):sub": "system:serviceaccount:${NAMESPACE}:${SERVICE_ACCOUNT_NAME}",
+                    "$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --profile $AWS_PROFILE --query 'cluster.identity.oidc.issuer' --output text | sed 's|https://||'):aud": "sts.amazonaws.com"
                 }
             }
         }
@@ -98,22 +113,25 @@ ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ROLE_NAME}"
 aws iam create-role \
     --role-name $ROLE_NAME \
     --assume-role-policy-document file://trust-policy.json \
-    --description "Role for Dapr SNS/SQS access via IRSA" 2>/dev/null || {
+    --description "Role for Dapr SNS/SQS access via IRSA" \
+    --profile $AWS_PROFILE 2>/dev/null || {
     echo "Role already exists, updating trust policy..."
     aws iam update-assume-role-policy \
         --role-name $ROLE_NAME \
-        --policy-document file://trust-policy.json
+        --policy-document file://trust-policy.json \
+        --profile $AWS_PROFILE
 }
 
 # Attach policy to role
 echo "Attaching policy to role..."
 aws iam attach-role-policy \
     --role-name $ROLE_NAME \
-    --policy-arn $POLICY_ARN
+    --policy-arn $POLICY_ARN \
+    --profile $AWS_PROFILE
 
 # Update the Dapr pubsub configuration with the correct role ARN
 echo "Updating Dapr pubsub configuration..."
-sed -i.bak "s|ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" k8s/dapr-pubsub.yaml
+sed -i.bak "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" k8s/dapr-pubsub.yaml
 
 # Clean up temporary files
 rm -f dapr-sns-sqs-policy.json trust-policy.json

@@ -9,6 +9,9 @@ CLUSTER_NAME="dapr-microservices-cluster"
 AWS_REGION="us-east-1"
 ROLE_NAME="DaprSNSSQSRole"
 POLICY_NAME="DaprSNSSQSPolicy"
+AWS_PROFILE="org-demo"
+echo "Using AWS Profile: $AWS_PROFILE"
+export AWS_PROFILE=$AWS_PROFILE
 
 # Check if AWS CLI is available
 if ! command -v aws &> /dev/null; then
@@ -16,9 +19,9 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
-# Get AWS Account ID
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null) || {
-    echo "❌ AWS not configured"
+# Get account ID from org-demo profile
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --profile $AWS_PROFILE --query Account --output text 2>/dev/null) || {
+    echo "❌ AWS profile $AWS_PROFILE not configured"
     exit 1
 }
 
