@@ -17,7 +17,14 @@ helm repo update || {
   echo "Error: Failed to update helm repositories"
   exit 1
 }
-helm install dapr dapr/dapr --namespace dapr-system --create-namespace --wait || {
+helm install dapr dapr/dapr \
+  --namespace dapr-system \
+  --create-namespace \
+  --set global.ha.enabled=false \
+  --set dapr_scheduler.cluster.storageClassName=gp2 \
+  --set dapr_placement.cluster.storageClassName=gp2 \
+  --wait \
+  --timeout 10m || {
   echo "Error: Failed to install Dapr"
   exit 1
 }
