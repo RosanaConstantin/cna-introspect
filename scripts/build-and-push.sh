@@ -57,8 +57,8 @@ aws ecr get-login-password --region $AWS_REGION --profile $AWS_PROFILE | docker 
 }
 
 # Build and push ProductService
-echo "Building ProductService..."
-docker build -t product-service ./services/product-service || {
+echo "Building ProductService for AMD64..."
+docker build --platform linux/amd64 -t product-service ./services/product-service || {
   echo "Error: Failed to build ProductService"
   exit 1
 }
@@ -72,8 +72,8 @@ docker push $ECR_REGISTRY/product-service:v1.0.0 || {
 }
 
 # Build and push OrderService
-echo "Building OrderService..."
-docker build -t order-service ./services/order-service || {
+echo "Building OrderService for AMD64..."
+docker build --platform linux/amd64 -t order-service ./services/order-service || {
   echo "Error: Failed to build OrderService"
   exit 1
 }
