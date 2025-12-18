@@ -44,12 +44,6 @@ const retry = async (fn, retries = 3) => {
 
 ## Dockerfile Analysis
 
-### Recommendations
-- ✅ Using Alpine Linux for smaller image size
-- ✅ Multi-stage builds not needed for simple Node.js apps
-- ⚠️ Consider adding health check: `HEALTHCHECK CMD curl -f http://localhost:3000/health`
-- ⚠️ Run as non-root user for security
-
 ## Kubernetes Manifests Analysis
 
 ### Security Improvements
